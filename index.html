@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>เกมทายข้อความจากรหัสมอร์ส</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #222; color: #eee; padding: 20px; }
+    .container { display: flex; justify-content: center; gap: 30px; margin-top: 30px; }
+    .barrel { font-size: 100px; cursor: pointer; transition: transform 0.2s; position: relative; }
+    .barrel:hover { transform: scale(1.1); }
+    .hint { position: absolute; bottom: -50px; width: 100%; font-size: 16px; color: #0f0; word-break: break-all; }
+    #result { margin-top: 20px; font-size: 24px; font-weight: bold; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>🔍 ทายรหัสมอร์ส!</h1>
+  <div class="container">
+    <div class="barrel" onclick="reveal(0)"></div>
+    <div class="barrel" onclick="reveal(1)"></div>
+    <div class="barrel" onclick="reveal(2)"></div>
+  </div>
+  <div id="result"></div>
+  <button onclick="shuffle()">🔄 สุ่มตำแหน่งใหม่</button>
+
+  <script>
+    const morse = ".... ..--- --- .._. .-.. ..- --. -. .- --";
+    const messages = ["ถูกต้อง! H2O_Lugnam", "ยังไม่ถูกนะ ลองใหม่!", "ยังไม่ใช่คำนี้"];
+    let answerIndex = Math.floor(Math.random() * 3);
+
+    function renderHints() {
+      document.querySelectorAll('.barrel').forEach((el, idx) => {
+        el.innerHTML = '';
+        if (idx === answerIndex) {
+          const span = document.createElement('div');
+          span.className = 'hint';
+          span.innerText = morse;
+          el.appendChild(span);
+        }
+      });
+    }
+
+    function reveal(index) {
+      const res = document.getElementById("result");
+      res.innerText = (index === answerIndex) ? messages[0] : messages[Math.floor(Math.random() * (messages.length - 1)) + 1];
+    }
+
+    function shuffle() {
+      answerIndex = Math.floor(Math.random() * 3);
+      document.getElementById("result").innerText = "";
+      renderHints();
+    }
+
+    // เริ่มต้นแสดงครั้งแรก
+    renderHints();
+  </script>
+</body>
+</html>
