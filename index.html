@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Instagram</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0; padding: 0;
+    }
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(135deg, #feda75, #d62976, #962fbf);
+      background-size: 400% 400%;
+      animation: gradientBG 10s ease infinite;
+      color: #fff;
+      overflow: hidden;
+      height: 100vh;
+      align-items: center;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    h1 {
+      font-size: 32px;
+      margin: 50px 0 30px 0; /* margin-top:50px; margin-bottom:30px */
+      flex-shrink: 0;
+    }
+    .wrapper {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 720px;
+      position: relative;
+    }
+    .container {
+      position: relative;
+      width: 100%;
+      height: 120px;
+      user-select: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .barrel {
+      width: 100px;
+      height: 100px;
+      font-size: 60px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transition: transform 0.5s ease;
+      will-change: transform;
+    }
+    .icon {
+      font-size: 60px;
+      transition: transform 0.3s ease;
+    }
+    .label {
+      font-size: 14px;
+      color: yellow;
+      margin-top: 6px;
+    }
+    .hint {
+      font-size: 14px;
+      color: #0f0;
+    }
+    #result {
+      margin-top: 15px;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      min-height: 30px;
+      flex-shrink: 0;
+    }
+    .controls {
+      margin-top: 30px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 15px;
+    }
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: rgba(255,255,255,0.2);
+      color: white;
+      flex-shrink: 0;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: rgba(255,255,255,0.3);
+    }
+  </style>
+</head>
+<body>
+  <h1>MY Instagram</h1>
+  <div class="wrapper">
+    <div class="container" id="barrelContainer"></div>
+    <div id="result"></div>
+    <div class="controls">
+      <button onclick="startGame()">▶️ เริ่ม</button>
+      <button onclick="resetGame()">🔄 รีเซ็ต</button>
+    </div>
+  </div>
+
+  <audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
+
+  <script>
+    const morse = ".... ..--- --- .._. .-.. ..- --. -. .- --";
+    const barrelCount = 5;
+    let barrels = [];
+    let answerIndex = Math.floor(Math.random() * barrelCount);
+    let gameStarted = false;
+    let isPlaying = false;
+    let hasGuessed = false;
+    const barrelContainer = document.getElementById("barrelContainer");
+
+    const barrelSpacing = 140; // px spacing between barrels
+
+    // เลื่อนถังทั้งหมดไปทางซ้าย 50px
+    function getPositions() {
+      const containerWidth = barrelContainer.clientWidth;
+      const totalWidth = (barrelCount - 1) * barrelSpacing;
+      const shiftLeft = 50; // เลื่อนซ้าย 50px
+      const startX = (containerWidth - totalWidth) / 2 - shiftLeft;
+      let positions = [];
+      for (let i = 0; i < barrelCount; i++) {
+        positions.push(startX + i * barrelSpacing);
+      }
+      return positions;
+    }
+
+    function createBarrels() {
+      barrelContainer.innerHTML = "";
+      barrels = [];
+
+      for (let i = 0; i < barrelCount; i++) {
+        const div = document.createElement("div");
+        div.className = "barrel";
+        div.innerHTML = `
+          <div class="icon">🪣</div>
+          <div class="label">${!gameStarted && i === answerIndex ? "Find Me" : ""}</div>
+          <div class="hint"></div>
+        `;
+        div.dataset.isAnswer = (i === answerIndex).toString();
+        div.dataset.index = i.toString();
+        div.style.transform = `translateX(0px)`;
+        div.onclick = () => reveal(div);
+        barrels.push(div);
+        barrelContainer.appendChild(div);
+      }
+      positionBarrels();
+    }
+
+    function positionBarrels() {
+      const positions = getPositions();
+      barrels.forEach((barrel, i) => {
+        barrel.style.transform = `translateX(${positions[i]}px)`;
+      });
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    async function startGame() {
+      if (isPlaying) return;
+      gameStarted = true;
+      isPlaying = true;
+      hasGuessed = false;
+      document.getElementById("result").textContent = "";
+      clearBarrels();
+
+      const steps = 10;
+      for(let step=0; step<steps; step++) {
+        shuffle(barrels);
+
+        const positions = getPositions();
+        barrels.forEach((barrel, i) => {
+          barrel.style.transform = `translateX(${positions[i]}px)`;
+        });
+
+        await new Promise(res => setTimeout(res, 500));
+      }
+      isPlaying = false;
+    }
+
+    function reveal(barrel) {
+      if (!gameStarted || isPlaying || hasGuessed) return;
+      hasGuessed = true;
+      document.getElementById("clickSound").play();
+
+      const icon = barrel.querySelector(".icon");
+      const label = barrel.querySelector(".label");
+      const hint = barrel.querySelector(".hint");
+      const result = document.getElementById("result");
+
+      label.textContent = "";
+      hint.textContent = "";
+
+      if (barrel.dataset.isAnswer === "true") {
+        icon.style.transform = "translateY(-15px)";
+        hint.textContent = morse;
+        result.textContent = "";
+      } else {
+        result.textContent = "Don’t found Me";
+      }
+    }
+
+    function clearBarrels() {
+      barrels.forEach(b => {
+        b.querySelector(".label").textContent = "";
+        b.querySelector(".hint").textContent = "";
+        b.querySelector(".icon").style.transform = "translateY(0)";
+      });
+    }
+
+    function resetGame() {
+      gameStarted = false;
+      isPlaying = false;
+      hasGuessed = false;
+      answerIndex = Math.floor(Math.random() * barrelCount);
+      document.getElementById("result").textContent = "";
+      createBarrels();
+    }
+
+    window.addEventListener('resize', () => {
+      if (barrels.length) positionBarrels();
+    });
+
+    resetGame();
+  </script>
+</body>
+</html>
